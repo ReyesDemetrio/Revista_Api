@@ -13,11 +13,11 @@ class Solicitud extends Model
     protected $table = 'solicitud';
     protected $primaryKey = 'Codigo';
     protected $fillable = [
-        'Codigo',
-        'CodigoRevista',
         'CodigoPersona',
+        'CodigoRevista',
+        'CodigoEstado',
         'Observacion',
-        'Estado',
+        'FechaRegistro',
         'Vigente',
     ];
 }

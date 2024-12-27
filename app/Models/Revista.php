@@ -13,10 +13,8 @@ class Revista extends Model
     protected $table = 'revista';
     protected $primaryKey = 'Codigo';
     protected $fillable = [
-        'Codigo',
-        'CodigoPersona',
         'Titulo',
-        'Paginas',
+        'Archivo',
         'Vigente',
     ];
 }

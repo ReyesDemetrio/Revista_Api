@@ -13,10 +13,10 @@ class Persona extends Model
     protected $table = 'persona';
     protected $primaryKey = 'Codigo';
     protected $fillable = [
-        'Codigo',
         'Nombre',
-        'Apellido',
-        'DNI',
+        'Apellidos',
+        'CodigoTipoDocumento',
+        'NumDocumento',
         'Telefono',
         'Correo',
         'Vigente',

@@ -50,22 +50,22 @@ class SolicitudController extends Controller
         //
     }
 
-    public function eliminarRevista(int $solicitud, int $revista){
+    public function eliminarRevista(int $solicitud, int $revista)
+    {
 
         DB::beginTransaction();
-        try{
+        try {
 
             Solicitud::where('Codigo', $solicitud)->update(['Vigente' => 0]);
 
             Revista::where('Codigo', $revista)->update(['Vigente' => 0]);
 
             DB::commit();
-            
+
             return response()->json([
                 'message' => 'Revista eliminada correctamente'
             ], 201);
-
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error al eliminar la revista',
@@ -74,14 +74,14 @@ class SolicitudController extends Controller
         }
     }
 
-    public function consultarRevista(int $id){
+    public function consultarRevista(int $id)
+    {
 
-        try{
+        try {
 
             $revista = Revista::find($id);
             return $revista;
-
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al consultar la revista',
                 'error' => $e->getMessage()
@@ -89,19 +89,19 @@ class SolicitudController extends Controller
         }
     }
 
-    public function actualizarSolicitud(Request $request){
+    public function actualizarSolicitud(Request $request)
+    {
 
         $revista = $request->input('revista');
-        
-        try{
-            
-            Revista::where('Codigo', $revista['Codigo'])->update($revista); 
-            
+
+        try {
+
+            Revista::where('Codigo', $revista['Codigo'])->update($revista);
+
             return response()->json([
                 'message' => 'Solicitud actualizada correctamente'
             ], 201);
-
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al actualizar la solicitud',
                 'error' => $e->getMessage()
@@ -120,9 +120,9 @@ class SolicitudController extends Controller
 
         $solicitud['CodigoEstado'] = 1;
         $solicitud['FechaRegistro'] = $fecha_Actual;
-        
+
         DB::beginTransaction();
-        try{
+        try {
 
             $articuloCreado = Revista::create($articulo);
             $solicitud['CodigoRevista'] = $articuloCreado->Codigo;
@@ -132,47 +132,95 @@ class SolicitudController extends Controller
             return response()->json([
                 'message' => 'Solicitud registrada correctamente'
             ], 201);
-
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error al registrar la solicitud',
                 'error' => $e->getMessage()
             ], 500);
         }
-    }   
+    }
 
     public function listarSolicitudes(Request $request)
     {
         $persona = $request->input('Persona');
 
-        try{
+        try {
             $solicitudes = DB::table('solicitud as s')
-            ->select([
-                's.Codigo as CodigoSolicitud',
-                's.CodigoRevista as CodigoRevista',
-                'r.Titulo',
-                's.FechaRegistro',
-                'e.Nombre as Estado',
-                DB::raw('CASE WHEN s.CodigoEstado = 1 THEN 1 ELSE 0 END as Eliminar'),
-                DB::raw('CASE WHEN s.CodigoEstado IN (1, 3) THEN 1 ELSE 0 END as Editar')
-            ])
-            ->join('revista as r', 'r.Codigo', '=', 's.CodigoRevista')
-            ->join('estado as e', 'e.Codigo', '=', 's.CodigoEstado')
-            ->where('s.CodigoPersona', $persona)
-            ->where('s.Vigente', 1)
-            ->where('r.Vigente', 1)
-            ->where('e.Vigente', 1)
-            ->orderBy('s.Codigo', 'desc')
-            ->get();
-        
-        return $solicitudes;
+                ->select([
+                    's.Codigo as CodigoSolicitud',
+                    's.CodigoRevista as CodigoRevista',
+                    'r.Titulo',
+                    's.FechaRegistro',
+                    'e.Nombre as Estado',
+                    DB::raw('CASE WHEN s.CodigoEstado = 1 THEN 1 ELSE 0 END as Eliminar'),
+                    DB::raw('CASE WHEN s.CodigoEstado IN (1, 3) THEN 1 ELSE 0 END as Editar')
+                ])
+                ->join('revista as r', 'r.Codigo', '=', 's.CodigoRevista')
+                ->join('estado as e', 'e.Codigo', '=', 's.CodigoEstado')
+                ->where('s.CodigoPersona', $persona)
+                ->where('s.Vigente', 1)
+                ->where('r.Vigente', 1)
+                ->where('e.Vigente', 1)
+                ->orderBy('s.Codigo', 'desc')
+                ->get();
 
-
-        }catch(\Exception $e){
+            return $solicitudes;
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al listar las solicitudes',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function listarSolicitudesAdmin(Request $request)
+    {
+        $query = $request->input('query');
+
+        // Extraer los valores de los parámetros del request
+        $nombrePersona = $query['persona'] ?? null;
+        $nombreRevista = $query['revista'] ?? null;
+
+        try {
+            // Construir la consulta
+            $solicitudes = DB::table('solicitud as s')
+                ->join('revista as r', 'r.Codigo', '=', 's.CodigoRevista')
+                ->join('estado as e', 'e.Codigo', '=', 's.CodigoEstado')
+                ->join('persona as p', 'p.Codigo', '=', 's.CodigoPersona')
+                ->select(
+                    's.Codigo as CodigoSolicitud',
+                    'p.Nombre',
+                    'p.Apellidos',
+                    'p.Correo',
+                    'p.Telefono',
+                    'r.Titulo',
+                    'e.Nombre as Estado',
+                    's.FechaRegistro'
+                )
+                ->where('s.Vigente', 1)
+                ->where('r.Vigente', 1)
+                ->where('p.Vigente', 1)
+                // Agregar filtros condicionales para persona y revista
+                ->when($nombrePersona, function ($query, $nombrePersona) {
+                    return $query->where('p.Nombre', 'LIKE', "%$nombrePersona%");
+                })
+                ->when($nombreRevista, function ($query, $nombreRevista) {
+                    return $query->where('r.Titulo', 'LIKE', "%$nombreRevista%");
+                })
+                ->get();
+
+            // Retornar la lista de solicitudes
+            return response()->json([
+                'message' => 'Solicitudes obtenidas exitosamente',
+                'data' => $solicitudes,
+            ], 200);
+        } catch (\Exception $e) {
+            // Manejar errores
+            return response()->json([
+                'message' => 'Error al listar las solicitudes',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

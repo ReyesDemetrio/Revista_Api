@@ -22,9 +22,11 @@ Route::get('combos/estados', [CombosController::class, 'getEstados']);
 Route::post('solicitud/registrar', [SolicitudController::class, 'registrarSolicitud']);
 Route::post('solicitud/actualizar', [SolicitudController::class, 'actualizarSolicitud']);
 Route::post('solicitud/listar', [SolicitudController::class, 'listarSolicitudes']);
+Route::post('solicitud/listarSolicitudesAdmin', [SolicitudController::class, 'listarSolicitudesAdmin']);
 
 Route::get('solicitud/consultarRevista/{revista}', [SolicitudController::class, 'consultarRevista']);
 Route::get('solicitud/eliminarRevista/{solicitud}/{revista}', [SolicitudController::class, 'eliminarRevista']);
+
 
 Route::post('auth/registrar', [AuthController::class, 'registrar']);
 Route::post('auth/acceso', [AuthController::class, 'acceso']);

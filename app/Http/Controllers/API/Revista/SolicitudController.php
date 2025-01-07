@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Revista;
 
 use App\Http\Controllers\Controller;
+use App\Models\HistorialSolicitud;
 use Illuminate\Http\Request;
 use App\Models\Revista;
 use App\Models\Solicitud;
@@ -115,7 +116,6 @@ class SolicitudController extends Controller
         $solicitud = $request->input('solicitud');
         $articulo = $request->input('articulo');
 
-
         $articulo['Archivo'] = 'archivo.pdf';
 
         $solicitud['CodigoEstado'] = 1;
@@ -127,8 +127,19 @@ class SolicitudController extends Controller
             $articuloCreado = Revista::create($articulo);
             $solicitud['CodigoRevista'] = $articuloCreado->Codigo;
 
-            Solicitud::create($solicitud);
+            $solicitudCreada = Solicitud::create($solicitud);
+
+            $historial_articulo = [
+                'CodigoSolicitud' => $solicitudCreada->Codigo,
+                'CodigoEstado' => 1,
+                'Fecha' => $fecha_Actual,
+                'Observacion' => 'Solicitud Registrada'
+            ];
+
+            HistorialSolicitud::create($historial_articulo);
+
             DB::commit();
+
             return response()->json([
                 'message' => 'Solicitud registrada correctamente'
             ], 201);
@@ -197,6 +208,7 @@ class SolicitudController extends Controller
                     'p.Telefono',
                     'r.Titulo',
                     'e.Nombre as Estado',
+                    'e.Codigo as CodigoEstado',
                     's.FechaRegistro'
                 )
                 ->where('s.Vigente', 1)
@@ -221,6 +233,48 @@ class SolicitudController extends Controller
             return response()->json([
                 'message' => 'Error al listar las solicitudes',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function iniciarRevision(Request $request)
+    {
+        $solicitud = $request->input('solicitud');
+        $fecha_Actual = date('Y-m-d');
+        DB::beginTransaction();
+        try {
+
+            if ($solicitud['codObservacion']) {
+                $solicitud['CodigoEstado'] = 3;
+            } else {
+                $solicitud['CodigoEstado'] = 2;
+                $solicitud['observacion'] = 'Solicitud en Trámite';
+            }
+
+            Solicitud::where('Codigo', $solicitud['CodigoSolicitud'])->update(['CodigoEstado' => $solicitud['CodigoEstado']]);
+
+
+            $historial_articulo = [
+                'CodigoSolicitud' => $solicitud['CodigoSolicitud'],
+                'CodigoEstado' => $solicitud['CodigoEstado'],
+                'Fecha' => $fecha_Actual,
+                'Observacion' => $solicitud['observacion']
+            ];
+
+            HistorialSolicitud::create($historial_articulo);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Solicitud actualizada correctamente',
+                $solicitud
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al actualizar la solicitud',
+                $solicitud,
+                'error' => $e->getMessage()
             ], 500);
         }
     }

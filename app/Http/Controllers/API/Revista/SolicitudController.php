@@ -90,6 +90,26 @@ class SolicitudController extends Controller
         }
     }
 
+    public function consultarObs(int $solicitud)
+    {
+
+        try {
+            $registro = HistorialSolicitud::select('CodigoSolicitud', 'Observacion', 'Fecha')
+                ->where('CodigoSolicitud', $solicitud)
+                ->where('Vigente', 1)
+                ->orderByDesc('Codigo') // Equivale a `order by Codigo desc`
+                ->first(); // Obtiene el primer resultado como objeto
+
+            return $registro;
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al consultar la observación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     public function actualizarSolicitud(Request $request)
     {
 
@@ -152,6 +172,40 @@ class SolicitudController extends Controller
         }
     }
 
+    public function registrarLevObs(Request $request)
+    {
+        $solicitud = $request->input('solicitud');
+        $fecha_Actual = date('Y-m-d');
+        DB::beginTransaction();
+
+        try {
+
+            Solicitud::where('Codigo', $solicitud['CodigoSolicitud'])->update(['CodigoEstado' => 5]);
+
+            $historial_articulo = [
+                'CodigoSolicitud' => $solicitud['CodigoSolicitud'],
+                'CodigoEstado' => 5,
+                'Fecha' => $fecha_Actual,
+                'Observacion' => $solicitud['Observacion']
+            ];
+
+            HistorialSolicitud::create($historial_articulo);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Solicitud actualizada correctamente',
+                $solicitud
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al registrar el Levantamiento de Observación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function listarSolicitudes(Request $request)
     {
         $persona = $request->input('Persona');
@@ -164,8 +218,10 @@ class SolicitudController extends Controller
                     'r.Titulo',
                     's.FechaRegistro',
                     'e.Nombre as Estado',
+                    'e.Codigo as CodigoEstado',
                     DB::raw('CASE WHEN s.CodigoEstado = 1 THEN 1 ELSE 0 END as Eliminar'),
-                    DB::raw('CASE WHEN s.CodigoEstado IN (1, 3) THEN 1 ELSE 0 END as Editar')
+                    DB::raw('CASE WHEN s.CodigoEstado IN (1, 3) THEN 1 ELSE 0 END as Editar'),
+                    DB::raw('CASE WHEN s.CodigoEstado = 3 THEN 1 ELSE 0 END as Observacion'),
                 ])
                 ->join('revista as r', 'r.Codigo', '=', 's.CodigoRevista')
                 ->join('estado as e', 'e.Codigo', '=', 's.CodigoEstado')

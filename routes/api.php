@@ -25,8 +25,10 @@ Route::post('solicitud/listar', [SolicitudController::class, 'listarSolicitudes'
 
 Route::post('solicitud/listarSolicitudesAdmin', [SolicitudController::class, 'listarSolicitudesAdmin']);
 Route::post('solicitud/iniciarRevision', [SolicitudController::class, 'iniciarRevision']);
+Route::post('solicitud/registrarLevObs', [SolicitudController::class, 'registrarLevObs']);
 
 Route::get('solicitud/consultarRevista/{revista}', [SolicitudController::class, 'consultarRevista']);
+Route::get('solicitud/consultarObs/{solicitud}', [SolicitudController::class, 'consultarObs']);
 Route::get('solicitud/eliminarRevista/{solicitud}/{revista}', [SolicitudController::class, 'eliminarRevista']);
 
 

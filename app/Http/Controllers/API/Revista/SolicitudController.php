@@ -258,6 +258,7 @@ class SolicitudController extends Controller
                 ->join('persona as p', 'p.Codigo', '=', 's.CodigoPersona')
                 ->select(
                     's.Codigo as CodigoSolicitud',
+                    'r.Codigo as CodigoRevista',
                     'p.Nombre',
                     'p.Apellidos',
                     'p.Correo',

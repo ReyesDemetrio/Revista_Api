@@ -16,5 +16,11 @@ class Revista extends Model
         'Titulo',
         'Archivo',
         'Vigente',
+        'TituloEN',
+        'ResumenES',
+        'ResumenEN',
+        'PalabrasClaveES',
+        'PalabrasClaveEN',
+        'Bibliografia'
     ];
 }
